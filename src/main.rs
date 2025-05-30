@@ -5,10 +5,12 @@ use std::time::Duration;
 use tokio::time::sleep;
 
 mod config;
+mod global_hotkey;
 mod key_sender;
 mod process_finder;
 
 use config::Config;
+use global_hotkey::HotkeyManager;
 use key_sender::KeySender;
 use process_finder::ProcessFinder;
 
@@ -92,9 +94,18 @@ async fn main() -> Result<()> {
     // Initialize components
     let mut process_finder = ProcessFinder::new();
     let key_sender = KeySender::new()?;
+    
+    // Initialize and setup global hotkey manager
+    let mut hotkey_manager = HotkeyManager::new()?;
+    hotkey_manager.register_pause_hotkey(&config.pause_hotkey)?;
+    let hotkey_manager = std::sync::Arc::new(hotkey_manager);
+
+    // Start hotkey listener
+    let hotkey_clone = hotkey_manager.clone();
+    hotkey_clone.start_hotkey_listener().await?;
 
     // Main execution loop
-    run_automation(config, &mut process_finder, &key_sender).await
+    run_automation(config, &mut process_finder, &key_sender, hotkey_manager).await
 }
 
 fn load_config_file(config_file: &str) -> Result<Config> {
@@ -255,13 +266,15 @@ fn print_startup_info(config: &Config) {
     }
 
     println!("{}", "═".repeat(40).cyan());
+    println!("{} Press {} to pause/resume globally", "⏸".blue(), config.pause_hotkey.yellow());
     println!("{} Press Ctrl+C to stop\n", "ℹ".blue());
 }
 
 async fn run_automation(
     config: Config,
     process_finder: &mut ProcessFinder,
-    key_sender: &KeySender
+    key_sender: &KeySender,
+    hotkey_manager: std::sync::Arc<HotkeyManager>
 ) -> Result<()> {
     // Find target process
     let window_id = find_target_process(&config, process_finder).await?;
@@ -270,9 +283,9 @@ async fn run_automation(
 
     // Run appropriate automation mode
     if !config.independent_keys.is_empty() {
-        run_independent_keys(&config, key_sender, window_id).await
+        run_independent_keys(&config, key_sender, window_id, hotkey_manager).await
     } else {
-        run_key_sequence(&config, key_sender, window_id).await
+        run_key_sequence(&config, key_sender, window_id, hotkey_manager).await
     }
 }
 
@@ -307,10 +320,11 @@ async fn find_target_process(config: &Config, process_finder: &mut ProcessFinder
     anyhow::bail!("Could not find process '{}' after {} attempts", config.process_name, config.max_retries);
 }
 
-async fn run_independent_keys(config: &Config, key_sender: &KeySender, window_id: u64) -> Result<()> {
+async fn run_independent_keys(config: &Config, key_sender: &KeySender, window_id: u64, hotkey_manager: std::sync::Arc<HotkeyManager>) -> Result<()> {
     println!("{} Starting independent keys automation...", "🚀".green());
 
     let mut handles = Vec::new();
+    let mut pause_receiver = hotkey_manager.get_pause_receiver();
 
     for independent_key in &config.independent_keys {
         let key = independent_key.key.clone();
@@ -318,9 +332,16 @@ async fn run_independent_keys(config: &Config, key_sender: &KeySender, window_id
         let sender = key_sender.clone();
         let wid = window_id;
         let verbose = config.verbose;
+        let hotkey_clone = hotkey_manager.clone();
 
         let handle = tokio::spawn(async move {
             loop {
+                // Check if paused
+                if hotkey_clone.is_paused() {
+                    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                    continue;
+                }
+
                 match sender.send_key_to_window(wid, &key) {
                     Ok(_) => {
                         if verbose {
@@ -339,9 +360,18 @@ async fn run_independent_keys(config: &Config, key_sender: &KeySender, window_id
         handles.push(handle);
     }
 
-    // Wait for Ctrl+C
-    tokio::signal::ctrl_c().await?;
-    println!("\n{} Shutting down...", "🛑".yellow());
+    // Wait for Ctrl+C or pause state changes
+    loop {
+        tokio::select! {
+            _ = tokio::signal::ctrl_c() => {
+                println!("\n{} Shutting down...", "🛑".yellow());
+                break;
+            }
+            _ = pause_receiver.changed() => {
+                // Pause state changed, continue loop
+            }
+        }
+    }
 
     // Cancel all tasks
     for handle in handles {
@@ -351,10 +381,11 @@ async fn run_independent_keys(config: &Config, key_sender: &KeySender, window_id
     Ok(())
 }
 
-async fn run_key_sequence(config: &Config, key_sender: &KeySender, window_id: u64) -> Result<()> {
+async fn run_key_sequence(config: &Config, key_sender: &KeySender, window_id: u64, hotkey_manager: std::sync::Arc<HotkeyManager>) -> Result<()> {
     println!("{} Starting key sequence automation...", "🚀".green());
 
     let mut iteration = 0u32;
+    let mut pause_receiver = hotkey_manager.get_pause_receiver();
 
     loop {
         iteration += 1;
@@ -364,10 +395,26 @@ async fn run_key_sequence(config: &Config, key_sender: &KeySender, window_id: u6
         }
 
         for (i, key_action) in config.key_sequence.iter().enumerate() {
-            // Check if we should stop
+            // Check if we should stop (Ctrl+C)
             if let Ok(_) = tokio::time::timeout(Duration::from_millis(1), tokio::signal::ctrl_c()).await {
                 println!("\n{} Shutting down...", "🛑".yellow());
                 return Ok(());
+            }
+
+            // Wait while paused
+            while hotkey_manager.is_paused() {
+                // Check for Ctrl+C while paused
+                if let Ok(_) = tokio::time::timeout(Duration::from_millis(100), tokio::signal::ctrl_c()).await {
+                    println!("\n{} Shutting down...", "🛑".yellow());
+                    return Ok(());
+                }
+                
+                // Check if pause state changed
+                if pause_receiver.has_changed().unwrap_or(false) {
+                    let _ = pause_receiver.borrow_and_update();
+                }
+                
+                tokio::time::sleep(Duration::from_millis(100)).await;
             }
 
             match key_sender.send_key_to_window(window_id, &key_action.key) {

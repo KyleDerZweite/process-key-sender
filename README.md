@@ -39,7 +39,7 @@ A cross-platform command-line tool for sending keystrokes to specific processes 
 - 📝 **Key sequences** - Send multiple keys with different intervals
 - ⏱️ **Configurable intervals** - Set custom delays between keystrokes
 - 🔄 **Loop control** - Run sequences once or loop indefinitely
-- ⏸️ **Pause/Resume functionality** - Global hotkey support to pause and resume
+- ⏸️ **Global pause/resume** - System-wide hotkey support (works regardless of window focus)
 - 🔍 **Smart process detection** - Automatically finds and monitors target processes
 - 📄 **Configuration files** - Save and load settings from JSON files
 - 🎨 **Colorized output** - Beautiful terminal interface with status indicators
@@ -105,14 +105,62 @@ pks --process ide.exe --sequence "ctrl+s:2000,f5:1000,ctrl+shift+f10:5000"
 
 ### Advanced Usage
 ```bash
-# Custom pause hotkey
-pks --process game.exe --pause-hotkey "ctrl+shift+p"
+# Load configuration from file
+pks --config my-config.json
 
-# Save configuration
+# Save current settings to configuration file
 pks --process game.exe --sequence "r:1000,e:500" --save-config my-config.json
 
-# Load configuration
-pks --config my-config.json --process different-game.exe
+# Maximum retries to find process
+pks --process game.exe --max-retries 20
+```
+
+## 🎛️ Global Hotkey Control
+
+The global hotkey feature allows you to pause and resume automation **regardless of which window has focus**. This is especially useful when you need to quickly pause automation while working in other applications.
+
+### Default Hotkey
+- **Default**: `Ctrl+Alt+R`
+- **Action**: Toggle pause/resume
+- **Scope**: System-wide (works in any application)
+
+### Usage
+1. Start automation with any command
+2. Switch to any other application (browser, game, etc.)
+3. Press `Ctrl+Alt+R` to pause automation
+4. Press `Ctrl+Alt+R` again to resume
+5. Visual feedback appears in the terminal
+
+### Custom Hotkeys
+```bash
+# Set custom pause hotkey in configuration
+{
+  "process_name": "game.exe",
+  "pause_hotkey": "ctrl+shift+p",
+  "key_sequence": [...]
+}
+```
+
+### Supported Key Combinations
+```
+Modifiers: ctrl, alt, shift, meta/cmd/super
+Keys: a-z, 0-9, f1-f12, space, enter, arrow keys, etc.
+
+Examples:
+- ctrl+alt+r
+- ctrl+shift+p  
+- alt+f1
+- ctrl+alt+space
+```
+
+### System Requirements (Linux)
+```bash
+# Ubuntu/Debian
+sudo apt-get install libx11-dev libxtst-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+
+# Fedora/RHEL
+sudo dnf install libX11-devel libXtst-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel
+```
 ```
 
 ### Command Line Options

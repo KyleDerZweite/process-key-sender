@@ -15,6 +15,8 @@ use winapi::shared::windef::HWND;
 pub struct KeySender {
     #[cfg(windows)]
     key_map: HashMap<String, u32>,
+    #[cfg(unix)]
+    key_map: HashMap<String, u32>,
 }
 
 impl Clone for KeySender {
@@ -76,7 +78,9 @@ impl KeySender {
 
         #[cfg(unix)]
         {
-            Ok(Self)
+            Ok(Self {
+                key_map: HashMap::new(),
+            })
         }
     }
 
