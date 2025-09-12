@@ -1,4 +1,23 @@
 #!/usr/bin/env python3
+"""
+Focus Key Presser (X11/XWayland, KDE Plasma on Fedora)
+- Press one or more keys at independent intervals while a specific window/app is focused.
+- Matching by title, WM_CLASS, .exe name (Proton/Wine), or PID.
+- Includes a discover mode to show you exactly what to enter.
+
+Dependencies (Fedora):
+  sudo dnf install python3-Xlib
+
+Wayland vs X11:
+- This uses X11 XTest to inject keys. Under Wayland, generic key injection is restricted.
+- It works if the target window is X11/XWayland (DISPLAY is set). Many Proton games are XWayland.
+- For Wayland-native windows, ask for a portal-based (xdg-desktop-portal RemoteDesktop) variant.
+
+SELinux:
+- Works under default enforcing SELinux with no policy changes.
+- Connects to your X server and reads /proc of your own processes only.
+"""
+
 import argparse
 import os
 import sys
@@ -6,16 +25,12 @@ import time
 import logging
 import traceback
 
-# X11/XWayland backend using python-xlib + XTest
-# Presses a key at a fixed frequency while the focused window matches.
-# Also includes "discover" mode to tell you what to enter for matching, including .exe names from /proc/<pid>/cmdline.
-
+# Lazy import handling for clearer error messages
 try:
     from Xlib import X, XK, display
     from Xlib.ext import xtest
     from Xlib.error import BadWindow, XError
 except Exception:
-    # Import lazily checked in main()
     pass
 
 LOG = logging.getLogger("focus-key-presser")
@@ -71,7 +86,7 @@ def get_cmdline_tokens(pid: int) -> list[str]:
 
 def exe_candidates_from_tokens(tokens: list[str]) -> list[str]:
     """
-    Heuristically extract possible .exe basenames from Wine/Proton cmdline tokens.
+    Extract possible .exe basenames from Wine/Proton cmdline tokens.
     Handles tokens like:
       'Z:\\...\\Shape of Dreams.exe'
       'C:\\Program Files\\Game\\Game.exe'
@@ -82,14 +97,11 @@ def exe_candidates_from_tokens(tokens: list[str]) -> list[str]:
     for t in tokens:
         if not t:
             continue
-        # Strip quotes
         tt = t.strip().strip('"').strip("'")
-        # Normalize backslashes
         tt_norm = tt.replace("\\", "/")
         base = os.path.basename(tt_norm)
         if base.lower().endswith(".exe"):
             cands.append(base)
-    # Deduplicate preserving order
     seen = set()
     out = []
     for c in cands:
@@ -107,7 +119,7 @@ class X11Inspector:
         self.d = display.Display(self.display_name)
         self.root = self.d.screen().root
 
-        # Intern atoms
+        # Atoms
         self.NET_ACTIVE_WINDOW = self.d.intern_atom("_NET_ACTIVE_WINDOW")
         self.NET_WM_NAME = self.d.intern_atom("_NET_WM_NAME")
         self.UTF8_STRING = self.d.intern_atom("UTF8_STRING")
@@ -187,69 +199,71 @@ class X11Inspector:
             return None
 
 
-class X11KeyPresser:
-    def __init__(self, app_query: str, key: str, hz: float, match_mode: str = "any", display_name: str | None = None):
-        self.app_query = app_query.lower()
-        self.key = key
-        self.period = 1.0 / hz if hz > 0 else 0.2
-        self.match_mode = match_mode
-        self.display_name = display_name or os.environ.get("DISPLAY")
-
-        # Setup X11
-        self.d = display.Display(self.display_name)
-        self.root = self.d.screen().root
-
-        # Atoms via inspector
-        self.inspector = X11Inspector(self.display_name)
-
-        # Resolve keysym/code
-        self.keysym = self._resolve_keysym(self.key)
-        if self.keysym == 0:
-            raise ValueError(f"Unrecognized key '{self.key}'. Try names like 'E', 'space', 'Return', 'Left'.")
-        self.keycode = self.d.keysym_to_keycode(self.keysym)
-        if self.keycode == 0:
-            raise ValueError(f"Cannot map keysym {self.keysym} for key '{self.key}' to a keycode on this layout.")
-
-    @staticmethod
-    def _resolve_keysym(key_str: str) -> int:
-        ks = XK.string_to_keysym(key_str)
+def resolve_keysym(key_str: str) -> int:
+    ks = XK.string_to_keysym(key_str)
+    if ks != 0:
+        return ks
+    if len(key_str) == 1:
+        for v in (key_str.lower(), key_str.upper()):
+            ks = XK.string_to_keysym(v)
+            if ks != 0:
+                return ks
+    aliases = {
+        "enter": "Return",
+        "esc": "Escape",
+        "del": "Delete",
+        "ins": "Insert",
+        "pgup": "Page_Up",
+        "pgdn": "Page_Down",
+        "win": "Super_L",
+        "meta": "Super_L",
+    }
+    if key_str in aliases:
+        ks = XK.string_to_keysym(aliases[key_str])
         if ks != 0:
             return ks
-        if len(key_str) == 1:
-            for v in (key_str.lower(), key_str.upper()):
-                ks = XK.string_to_keysym(v)
-                if ks != 0:
-                    return ks
-        aliases = {
-            "enter": "Return",
-            "esc": "Escape",
-            "del": "Delete",
-            "ins": "Insert",
-            "pgup": "Page_Up",
-            "pgdn": "Page_Down",
-            "win": "Super_L",
-            "meta": "Super_L",
-        }
-        if key_str in aliases:
-            ks = XK.string_to_keysym(aliases[key_str])
-            if ks != 0:
-                return ks
-        if key_str.upper().startswith("KEY_") and len(key_str) == 5:
-            ks = XK.string_to_keysym(key_str[-1])
-            if ks != 0:
-                return ks
-        return 0
+    if key_str.upper().startswith("KEY_") and len(key_str) == 5:
+        ks = XK.string_to_keysym(key_str[-1])
+        if ks != 0:
+            return ks
+    return 0
 
-    def _send_key_once(self):
-        xtest.fake_input(self.d, X.KeyPress, self.keycode)
-        xtest.fake_input(self.d, X.KeyRelease, self.keycode)
-        self.d.flush()
+
+class KeySpec:
+    def __init__(self, key_name: str, dpy, interval_s: float):
+        self.key_name = key_name
+        self.interval = float(interval_s)
+        if self.interval <= 0:
+            raise ValueError(f"Interval must be > 0 for key '{key_name}'")
+        self.keysym = resolve_keysym(key_name)
+        if self.keysym == 0:
+            raise ValueError(f"Unrecognized key '{key_name}'. Try 'E', 'Q', 'space', 'Return', 'Left', etc.")
+        self.keycode = dpy.keysym_to_keycode(self.keysym)
+        if self.keycode == 0:
+            raise ValueError(f"Cannot map keysym {self.keysym} for key '{key_name}' to a keycode on this layout.")
+        self.next_due = time.monotonic()  # schedule first press immediately when active
+
+    def send_once(self, dpy):
+        xtest.fake_input(dpy, X.KeyPress, self.keycode)
+        xtest.fake_input(dpy, X.KeyRelease, self.keycode)
+
+
+class X11KeyScheduler:
+    def __init__(self, app_query: str, match_mode: str, keys: list[KeySpec], display_name: str | None = None):
+        self.app_query = (app_query or "").lower()
+        self.match_mode = match_mode
+        self.keys = keys
+        self.display_name = display_name or os.environ.get("DISPLAY")
+
+        # X connections
+        self.d = display.Display(self.display_name)
+        self.root = self.d.screen().root
+        self.inspector = X11Inspector(self.display_name)
 
     def _target_is_active(self) -> bool:
         win = self.inspector.get_active_window()
         if not win:
             return False
-
         title, classes = self.inspector.get_window_identity(win)
         pid = self.inspector.get_window_pid(win)
 
@@ -272,7 +286,6 @@ class X11KeyPresser:
             joined = " ".join(toks).lower()
             if needle in joined:
                 return True
-            # Also check just basenames of .exe tokens
             for base in exe_candidates_from_tokens(toks):
                 if needle in base.lower():
                     return True
@@ -284,33 +297,91 @@ class X11KeyPresser:
             return match_wmclass()
         if self.match_mode == "exe":
             return match_exe()
-        if self.match_mode == "any":
-            return match_title() or match_wmclass() or match_exe()
         if self.match_mode == "pid":
-            # Allow numeric pid in --app for pinning
             try:
                 return pid is not None and int(needle) == pid
             except Exception:
                 return False
-        return False
+        # any
+        return match_title() or match_wmclass() or match_exe()
 
-    def run(self, dry_run=False):
-        LOG.info("Starting: app='%s', match=%s, key='%s', every %.3fs", self.app_query, self.match_mode, self.key, self.period)
+    def run(self, dry_run=False, poll_min=0.01, poll_max=0.1):
+        LOG.info(
+            "Starting: match=%s app='%s'; keys=%s",
+            self.match_mode,
+            self.app_query,
+            ", ".join([f"{k.key_name}@{k.interval:.3f}s" for k in self.keys]),
+        )
         last_state = None
         try:
             while True:
                 active = self._target_is_active()
                 if active != last_state:
                     LOG.info("Target active: %s", active)
+                    # When becoming active, schedule immediate sends by resetting next_due
+                    if active:
+                        now = time.monotonic()
+                        for k in self.keys:
+                            k.next_due = now
                     last_state = active
+
+                now = time.monotonic()
                 if active:
-                    if dry_run:
-                        LOG.debug("[dry-run] would send key '%s'", self.key)
-                    else:
-                        self._send_key_once()
-                time.sleep(self.period)
+                    # Send keys that are due
+                    next_delta = None
+                    for k in self.keys:
+                        if now >= k.next_due:
+                            if dry_run:
+                                LOG.debug("[dry-run] would send key '%s'", k.key_name)
+                            else:
+                                k.send_once(self.d)
+                            # schedule next occurrence; catch-up if we are late
+                            while k.next_due <= now:
+                                k.next_due += k.interval
+                        # compute soonest next due time to sleep accordingly
+                        dt = max(k.next_due - now, 0.0)
+                        next_delta = dt if next_delta is None else min(next_delta, dt)
+                    # Flush X events after a batch
+                    if not dry_run:
+                        self.d.flush()
+                    # Sleep until next key is due or a small minimum
+                    sleep_for = next_delta if next_delta is not None else poll_max
+                    sleep_for = max(min(sleep_for, poll_max), poll_min)
+                    time.sleep(sleep_for)
+                else:
+                    # Not active; back off a bit
+                    time.sleep(0.1)
         except KeyboardInterrupt:
             LOG.info("Interrupted by user, exiting.")
+
+
+def parse_key_specs(keys: list[str], default_interval: float, dpy) -> list[KeySpec]:
+    """
+    Parse --key KEY[:interval_seconds], allowing multiple flags.
+    Example: --key E:0.2 --key Q:0.35 --key space
+    If interval omitted, default_interval applies.
+    """
+    specs: list[KeySpec] = []
+    if not keys:
+        # default to E with provided default interval
+        specs.append(KeySpec("E", dpy, default_interval))
+        return specs
+    for spec in keys:
+        s = spec.strip()
+        if not s:
+            continue
+        if ":" in s:
+            key_name, interval_str = s.split(":", 1)
+            key_name = key_name.strip()
+            try:
+                interval = float(interval_str.strip())
+            except Exception:
+                raise ValueError(f"Invalid interval in key spec '{s}'. Use KEY[:seconds], e.g., E:0.2")
+        else:
+            key_name = s
+            interval = default_interval
+        specs.append(KeySpec(key_name, dpy, interval))
+    return specs
 
 
 def discover_loop(inspector: X11Inspector, watch: bool, interval: float):
@@ -366,7 +437,6 @@ def discover_loop(inspector: X11Inspector, watch: bool, interval: float):
                                     first = t[0] if t else "?"
                                     print(f"  {p} -> {comm} :: {first}")
                         print("\nSuggestions:")
-                        # Suggestions to try for --app
                         if title:
                             print(f"  --match title  --app {title!r}")
                         for c in classes:
@@ -376,6 +446,8 @@ def discover_loop(inspector: X11Inspector, watch: bool, interval: float):
                             exes = exe_candidates_from_tokens(toks)
                             for base in exes:
                                 print(f"  --match exe    --app {base!r}")
+                        if pid:
+                            print(f"  --match pid    --app {pid}")
                     except Exception:
                         print("Error while reading window details:")
                         traceback.print_exc()
@@ -390,7 +462,7 @@ def discover_loop(inspector: X11Inspector, watch: bool, interval: float):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Press a key at a fixed frequency while a specific app/window is focused (X11/XWayland). "
+        description="Press one or more keys at fixed intervals while a specific app/window is focused (X11/XWayland). "
                     "Includes discovery to help match Proton/Wine .exe names."
     )
     parser.add_argument("--display", default=None, help="X11 DISPLAY to connect to (defaults to $DISPLAY).")
@@ -398,13 +470,26 @@ def main():
 
     sub = parser.add_subparsers(dest="command")
 
-    # Run mode (default)
+    # Run mode
     p_run = sub.add_parser("run", help="Run the key presser")
     p_run.add_argument("--app", required=True, help="String to match. Interpreted according to --match.")
     p_run.add_argument("--match", choices=["any", "title", "wmclass", "exe", "pid"], default="any",
                        help="Match against window title, WM_CLASS, process cmdline (.exe), a PID, or any (default).")
-    p_run.add_argument("--key", default="E", help="Key to press (e.g., E, space, Return, Left). Default: E")
-    p_run.add_argument("--hz", type=float, default=5.0, help="Times per second to press the key. Default: 5.0")
+    p_run.add_argument(
+        "--key",
+        action="append",
+        dest="keys",
+        help="Key spec as KEY[:interval_seconds]. May be given multiple times. "
+             "Examples: --key E:0.2 --key Q:0.5 --key space",
+    )
+    p_run.add_argument(
+        "--default-interval",
+        type=float,
+        default=0.2,
+        help="Default interval (seconds) used for keys without an explicit interval. Default: 0.2",
+    )
+    p_run.add_argument("--hz", type=float, default=None,
+                       help="Optional: set default interval via Hz (overrides --default-interval), e.g., --hz 5 -> 0.2s")
     p_run.add_argument("--dry-run", action="store_true", help="Do not press keys; just log what would happen.")
 
     # Discover mode
@@ -414,12 +499,11 @@ def main():
 
     args = parser.parse_args()
 
-    # Default to 'discover' help if no subcommand but user asked nothing
     if args.command is None:
         parser.print_help(sys.stderr)
         sys.exit(1)
 
-    # Configure logging
+    # Logging
     level = logging.WARNING
     if getattr(args, "verbose", 0) == 1:
         level = logging.INFO
@@ -427,6 +511,7 @@ def main():
         level = logging.DEBUG
     logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", level=level)
 
+    # Wayland check
     session_type = os.environ.get("XDG_SESSION_TYPE", "").lower()
     if session_type == "wayland" and not have_x11():
         LOG.error(
@@ -438,40 +523,51 @@ def main():
         )
         sys.exit(2)
 
+    # Dependency check
     try:
         from Xlib import X  # noqa: F401
     except Exception:
         LOG.error("python3-Xlib is not available. Install it on Fedora with:\n  sudo dnf install python3-Xlib")
         sys.exit(3)
 
+    # Open display early so we can resolve keys for validation
     try:
-        inspector = X11Inspector(args.display)
+        dpy = display.Display(args.display or os.environ.get("DISPLAY"))
     except Exception as e:
         LOG.error("Failed to open X11 display: %s", e)
         sys.exit(4)
 
     if args.command == "discover":
+        try:
+            inspector = X11Inspector(args.display)
+        except Exception as e:
+            LOG.error("Failed to open X11 display: %s", e)
+            sys.exit(4)
         discover_loop(inspector, watch=args.watch, interval=args.interval)
         return
 
     # command == "run"
-    if args.hz <= 0:
-        LOG.error("Hz must be > 0")
+    default_interval = args.default_interval
+    if args.hz and args.hz > 0:
+        default_interval = 1.0 / args.hz
+    try:
+        keyspecs = parse_key_specs(args.keys or [], default_interval, dpy)
+    except Exception as e:
+        LOG.error("Invalid --key specification: %s", e)
         sys.exit(5)
 
     try:
-        presser = X11KeyPresser(
+        scheduler = X11KeyScheduler(
             app_query=args.app,
-            key=args.key,
-            hz=args.hz,
             match_mode=args.match,
-            display_name=args.display
+            keys=keyspecs,
+            display_name=args.display,
         )
     except Exception as e:
-        LOG.error("Failed to initialize key presser: %s", e)
+        LOG.error("Failed to initialize key scheduler: %s", e)
         sys.exit(6)
 
-    presser.run(dry_run=args.dry_run)
+    scheduler.run(dry_run=args.dry_run)
 
 
 if __name__ == "__main__":
