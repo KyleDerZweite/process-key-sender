@@ -8,6 +8,7 @@ use thiserror::Error;
 
 /// Main error type for process-key-sender operations.
 #[derive(Error, Debug)]
+#[allow(dead_code)]
 pub enum PksError {
     /// Process was not found after the specified number of retries.
     #[error("process '{name}' not found after {retries} attempts")]
@@ -67,8 +68,10 @@ pub enum PksError {
 }
 
 /// Result type alias for process-key-sender operations.
+#[allow(dead_code)]
 pub type Result<T> = std::result::Result<T, PksError>;
 
+#[allow(dead_code)]
 impl PksError {
     /// Create a new ProcessNotFound error.
     pub fn process_not_found(name: impl Into<String>, retries: u32) -> Self {
