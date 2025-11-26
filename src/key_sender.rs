@@ -1,21 +1,56 @@
+//! Keyboard input simulation for sending keystrokes to windows.
+//!
+//! This module provides platform-specific key sending functionality.
+//! On Windows, it uses the Windows API (`SendInput`). Linux support
+//! is planned for a future release.
+//!
+//! # Supported Keys
+//!
+//! - Letters: `a-z` (case insensitive)
+//! - Numbers: `0-9`
+//! - Function keys: `f1-f12`
+//! - Special keys: `space`, `enter`, `tab`, `escape`, `backspace`, `delete`
+//! - Arrow keys: `left`, `right`, `up`, `down`
+//! - Navigation: `home`, `end`, `pageup`, `pagedown`
+//! - Modifiers: `shift`, `ctrl`, `alt`
+//! - Combinations: `ctrl+c`, `alt+tab`, `ctrl+shift+s`
+
 use anyhow::Result;
 use std::collections::HashMap;
 
 #[cfg(windows)]
-use winapi::um::winuser::{
-    VK_SPACE, VK_RETURN, VK_TAB, VK_ESCAPE, VK_SHIFT, VK_CONTROL, VK_MENU,
-    EnumWindows, GetWindowThreadProcessId, IsWindowVisible, GetWindowTextA,
-    SendInput, INPUT, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP,
-    SetForegroundWindow, SetActiveWindow, BringWindowToTop, ShowWindow,
-    SW_RESTORE, GetForegroundWindow
-};
-#[cfg(windows)]
 use winapi::shared::windef::HWND;
+#[cfg(windows)]
+use winapi::um::winuser::{
+    BringWindowToTop, EnumWindows, GetForegroundWindow, GetWindowTextA, GetWindowThreadProcessId,
+    IsWindowVisible, SendInput, SetActiveWindow, SetForegroundWindow, ShowWindow, INPUT,
+    INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, SW_RESTORE, VK_CONTROL, VK_ESCAPE, VK_MENU,
+    VK_RETURN, VK_SHIFT, VK_SPACE, VK_TAB,
+};
 
+/// Sends keystrokes to target windows.
+///
+/// Handles key parsing, validation, and platform-specific key injection.
+/// Supports single keys, modifier combinations, and key sequences.
+///
+/// # Example
+///
+/// ```no_run
+/// use process_key_sender::KeySender;
+///
+/// let sender = KeySender::new().unwrap();
+///
+/// // Validate a key
+/// sender.parse_key_for_validation("ctrl+s").unwrap();
+///
+/// // Send a key to a window (requires valid window ID)
+/// // sender.send_key_to_window(12345, "space").unwrap();
+/// ```
 pub struct KeySender {
     #[cfg(windows)]
     key_map: HashMap<String, u32>,
     #[cfg(unix)]
+    #[allow(dead_code)]
     key_map: HashMap<String, u32>,
 }
 
@@ -256,7 +291,12 @@ impl KeySender {
             let result2 = SendInput(1, &mut input_up, std::mem::size_of::<INPUT>() as i32);
 
             if result1 == 0 || result2 == 0 {
-                anyhow::bail!("SendInput failed for key '{}' (results: {}, {})", key, result1, result2);
+                anyhow::bail!(
+                    "SendInput failed for key '{}' (results: {}, {})",
+                    key,
+                    result1,
+                    result2
+                );
             }
         }
 
@@ -348,12 +388,16 @@ impl KeySender {
             let result = SendInput(
                 inputs.len() as u32,
                 inputs.as_mut_ptr(),
-                std::mem::size_of::<INPUT>() as i32
+                std::mem::size_of::<INPUT>() as i32,
             );
 
             if result != inputs.len() as u32 {
-                anyhow::bail!("SendInput failed for key combination '{}' (sent {}/{})", 
-                    key_combo, result, inputs.len());
+                anyhow::bail!(
+                    "SendInput failed for key combination '{}' (sent {}/{})",
+                    key_combo,
+                    result,
+                    inputs.len()
+                );
             }
         }
 

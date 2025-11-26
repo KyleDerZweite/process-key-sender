@@ -6,6 +6,7 @@ We actively maintain and provide security updates for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 0.2.x   | :white_check_mark: |
 | 0.1.x   | :white_check_mark: |
 | < 0.1.0 | :x:                |
 
@@ -189,8 +190,8 @@ Security researchers who responsibly disclose vulnerabilities will be:
 2. **No Authentication**: No user authentication or access controls
 3. **Global Scope**: Windows implementation may affect system-wide state
 
-### **Planned Improvements**
-1. **Configuration Encryption**: Planned for v0.2.0
+### Planned Improvements
+1. **Configuration Encryption**: Planned for future release
 2. **Process Sandboxing**: Investigating safer process interaction
 3. **Audit Logging**: Optional security event logging
 4. **Digital Signatures**: Code signing for releases
@@ -236,5 +237,5 @@ This security policy is provided as-is and may be updated without notice. Users 
 
 ---
 
-*Last Updated: 2025-05-29*
-*Security Policy Version: 1.0*
+*Last Updated: 2025-11-26*
+*Security Policy Version: 1.1*

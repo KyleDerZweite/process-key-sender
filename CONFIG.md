@@ -23,19 +23,19 @@ Configuration files use JSON format with the following structure:
 
 Ready-to-use example configuration files are available in the `example-configs/` directory:
 
-* `example-config.json` - Basic independent keys setup
-* `example-single-key-config.json` - Simple single key automation
-* `example-sequence-config.json` - Sequential key presses
-* `example-advanced-config.json` - Advanced multi-key automation
+* `config.json` - Basic independent keys setup
+* `single-key-config.json` - Simple single key automation
+* `sequence-config.json` - Sequential key presses
+* `advanced-config.json` - Advanced multi-key automation
 
 ### Using Example Configs
 
 ```bash
 # Use an example directly
-pks --config example-configs/example-config.json
+pks --config example-configs/config.json
 
 # Copy and customize
-cp example-configs/example-config.json my-custom-config.json
+cp example-configs/config.json my-custom-config.json
 # Edit my-custom-config.json with your settings
 pks --config my-custom-config.json
 ```
@@ -257,7 +257,7 @@ Automated application testing:
 
 ```bash
 # Use example configuration
-pks --config example-configs/example-config.json
+pks --config example-configs/config.json
 
 # Load custom configuration
 pks --config my-config.json
@@ -300,10 +300,10 @@ The tool will validate your configuration and display helpful error messages for
 ```
 process-key-sender/
 ├── example-configs/          # Ready-to-use example configurations
-│   ├── example-config.json
-│   ├── example-single-key-config.json
-│   ├── example-sequence-config.json
-│   └── example-advanced-config.json
+│   ├── config.json
+│   ├── single-key-config.json
+│   ├── sequence-config.json
+│   └── advanced-config.json
 ├── CONFIG.md                 # This configuration guide
 ├── README.md                 # Main project documentation
 └── target/release/pks.exe    # Compiled executable

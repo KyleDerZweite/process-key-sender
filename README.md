@@ -6,7 +6,7 @@ A cross-platform command-line tool for sending keystrokes to specific processes 
 
 **This tool is intended for educational purposes and use with offline/single-player games only.**
 
-### 🚨 **ANTI-CHEAT WARNING**
+### **ANTI-CHEAT WARNING**
 - **DO NOT use this tool with online multiplayer games**
 - **DO NOT use this tool with games that have anti-cheat systems** (EasyAntiCheat, BattlEye, Vanguard, etc.)
 - **Using automation tools in online games may result in:**
@@ -15,14 +15,14 @@ A cross-platform command-line tool for sending keystrokes to specific processes 
   - Violation of Terms of Service
   - Loss of game progress and purchases
 
-### ✅ **Safe Use Cases**
+### **Safe Use Cases**
 - Single-player offline games
 - Local development and testing
 - Automation of non-gaming applications
 - Educational and research purposes
 - Personal productivity tools
 
-### 🎮 **Gaming Guidelines**
+### **Gaming Guidelines**
 - Always check the game's Terms of Service before use
 - Only use with games that explicitly allow automation tools
 - Prefer official game features (auto-run, key rebinding) when available
@@ -34,16 +34,16 @@ A cross-platform command-line tool for sending keystrokes to specific processes 
 
 ## Features
 
-- 🎯 **Target specific processes** - Send keys only to the process you specify
-- ⌨️ **Flexible key support** - Support for letters, special keys, and key combinations
-- 📝 **Key sequences** - Send multiple keys with different intervals
-- ⏱️ **Configurable intervals** - Set custom delays between keystrokes
-- 🔄 **Loop control** - Run sequences once or loop indefinitely
-- ⏸️ **Global pause/resume** - System-wide hotkey support (works regardless of window focus)
-- 🔍 **Smart process detection** - Automatically finds and monitors target processes
-- 📄 **Configuration files** - Save and load settings from JSON files
-- 🎨 **Colorized output** - Beautiful terminal interface with status indicators
-- 🚀 **Cross-platform** - Works on Windows and Linux
+- **Target specific processes** - Send keys only to the process you specify
+- **Flexible key support** - Support for letters, special keys, and key combinations
+- **Key sequences** - Send multiple keys with different intervals
+- **Configurable intervals** - Set custom delays between keystrokes
+- **Loop control** - Run sequences once or loop indefinitely
+- **Global pause/resume** - System-wide hotkey support (works regardless of window focus)
+- **Smart process detection** - Automatically finds and monitors target processes
+- **Configuration files** - Save and load settings from JSON files
+- **Colorized output** - Beautiful terminal interface with status indicators
+- **Cross-platform** - Works on Windows and Linux
 
 ## Installation
 
@@ -115,7 +115,7 @@ pks --process game.exe --sequence "r:1000,e:500" --save-config my-config.json
 pks --process game.exe --max-retries 20
 ```
 
-## 🎛️ Global Hotkey Control
+## Global Hotkey Control
 
 The global hotkey feature allows you to pause and resume automation **regardless of which window has focus**. This is especially useful when you need to quickly pause automation while working in other applications.
 
@@ -350,7 +350,7 @@ cargo test
 ### TODO
 - [ ] Complete Linux/X11 implementation
 - [ ] Add macOS support
-- [ ] Global hotkey implementation for pause/resume
+- [x] Global hotkey implementation for pause/resume
 - [ ] GUI version
 - [ ] More key types and special characters
 - [ ] Process window title filtering

@@ -1,7 +1,7 @@
 [package]
 name = "process-key-sender"
-version = "0.1.1"
-edition = "2024"
+version = "0.2.0"
+edition = "2021"
 authors = ["KyleDerZweite <kyle@process-key-sender.dev>"]
 description = "Cross-platform keystroke automation tool for specific processes"
 repository = "https://github.com/KyleDerZweite/process-key-sender"
@@ -21,7 +21,10 @@ colored = "3.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 sysinfo = "0.37"
+thiserror = "1.0"
 tokio = { version = "1.0", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 global-hotkey = "0.5"
 
 [target.'cfg(windows)'.dependencies]

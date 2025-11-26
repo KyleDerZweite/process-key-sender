@@ -1,9 +1,25 @@
+//! Global hotkey handling for pause/resume functionality.
+//!
+//! This module provides system-wide hotkey registration and handling,
+//! allowing users to pause and resume automation regardless of which
+//! window has focus.
+//!
+//! # Example Hotkey Formats
+//!
+//! - `ctrl+alt+r` - Control + Alt + R
+//! - `ctrl+shift+p` - Control + Shift + P
+//! - `alt+f1` - Alt + F1
+
 use anyhow::Result;
 use global_hotkey::{GlobalHotKeyEvent, GlobalHotKeyManager, HotKeyState};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::sync::watch;
 
+/// Manages global hotkey registration and state.
+///
+/// The `HotkeyManager` handles registration of system-wide hotkeys and
+/// provides a way to check and respond to pause state changes.
 pub struct HotkeyManager {
     manager: GlobalHotKeyManager,
     is_paused: Arc<AtomicBool>,
@@ -15,7 +31,7 @@ impl HotkeyManager {
     pub fn new() -> Result<Self> {
         let manager = GlobalHotKeyManager::new()
             .map_err(|e| anyhow::anyhow!("Failed to create GlobalHotKeyManager: {}", e))?;
-        
+
         let is_paused = Arc::new(AtomicBool::new(false));
         let (pause_sender, pause_receiver) = watch::channel(false);
 
@@ -29,11 +45,15 @@ impl HotkeyManager {
 
     pub fn register_pause_hotkey(&mut self, hotkey_str: &str) -> Result<()> {
         let hotkey = parse_hotkey(hotkey_str)?;
-        
-        self.manager.register(hotkey)
+
+        self.manager
+            .register(hotkey)
             .map_err(|e| anyhow::anyhow!("Failed to register hotkey '{}': {}", hotkey_str, e))?;
 
-        println!("🔥 Global pause hotkey '{}' registered successfully", hotkey_str);
+        println!(
+            "🔥 Global pause hotkey '{}' registered successfully",
+            hotkey_str
+        );
         Ok(())
     }
 
@@ -55,9 +75,9 @@ impl HotkeyManager {
                     if event.state == HotKeyState::Pressed {
                         let current_state = manager.is_paused.load(Ordering::Relaxed);
                         let new_state = !current_state;
-                        
+
                         manager.is_paused.store(new_state, Ordering::Relaxed);
-                        
+
                         if let Err(e) = manager.pause_sender.send(new_state) {
                             eprintln!("Failed to send pause state: {}", e);
                         }
@@ -69,7 +89,7 @@ impl HotkeyManager {
                         }
                     }
                 }
-                
+
                 // Small sleep to prevent busy waiting
                 std::thread::sleep(std::time::Duration::from_millis(10));
             }
@@ -84,7 +104,7 @@ fn parse_hotkey(hotkey_str: &str) -> Result<global_hotkey::hotkey::HotKey> {
 
     let binding = hotkey_str.to_lowercase();
     let parts: Vec<&str> = binding.split('+').map(|s| s.trim()).collect();
-    
+
     if parts.is_empty() {
         return Err(anyhow::anyhow!("Empty hotkey string"));
     }
@@ -100,14 +120,18 @@ fn parse_hotkey(hotkey_str: &str) -> Result<global_hotkey::hotkey::HotKey> {
             "meta" | "cmd" | "super" => modifiers |= Modifiers::SUPER,
             key => {
                 if key_code.is_some() {
-                    return Err(anyhow::anyhow!("Multiple keys specified in hotkey: {}", hotkey_str));
+                    return Err(anyhow::anyhow!(
+                        "Multiple keys specified in hotkey: {}",
+                        hotkey_str
+                    ));
                 }
                 key_code = Some(parse_key_code(key)?);
             }
         }
     }
 
-    let code = key_code.ok_or_else(|| anyhow::anyhow!("No key specified in hotkey: {}", hotkey_str))?;
+    let code =
+        key_code.ok_or_else(|| anyhow::anyhow!("No key specified in hotkey: {}", hotkey_str))?;
 
     Ok(HotKey::new(Some(modifiers), code))
 }
@@ -143,7 +167,7 @@ fn parse_key_code(key: &str) -> Result<global_hotkey::hotkey::Code> {
         "x" => Code::KeyX,
         "y" => Code::KeyY,
         "z" => Code::KeyZ,
-        
+
         // Numbers
         "0" => Code::Digit0,
         "1" => Code::Digit1,
@@ -155,7 +179,7 @@ fn parse_key_code(key: &str) -> Result<global_hotkey::hotkey::Code> {
         "7" => Code::Digit7,
         "8" => Code::Digit8,
         "9" => Code::Digit9,
-        
+
         // Function keys
         "f1" => Code::F1,
         "f2" => Code::F2,
@@ -169,7 +193,7 @@ fn parse_key_code(key: &str) -> Result<global_hotkey::hotkey::Code> {
         "f10" => Code::F10,
         "f11" => Code::F11,
         "f12" => Code::F12,
-        
+
         // Special keys
         "space" => Code::Space,
         "enter" | "return" => Code::Enter,
@@ -182,13 +206,13 @@ fn parse_key_code(key: &str) -> Result<global_hotkey::hotkey::Code> {
         "end" => Code::End,
         "pageup" => Code::PageUp,
         "pagedown" => Code::PageDown,
-        
+
         // Arrow keys
         "up" | "arrowup" => Code::ArrowUp,
         "down" | "arrowdown" => Code::ArrowDown,
         "left" | "arrowleft" => Code::ArrowLeft,
         "right" | "arrowright" => Code::ArrowRight,
-        
+
         _ => return Err(anyhow::anyhow!("Unsupported key: {}", key)),
     };
 

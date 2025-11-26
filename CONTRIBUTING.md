@@ -16,7 +16,7 @@ Before contributing, please understand that this tool is designed for **educatio
 ## 🛠️ **Development Setup**
 
 ### Prerequisites
-- Rust 1.70+ (2024 edition)
+- Rust 1.85+ (2021 edition)
 - Git
 - Windows 10+ or Linux (for development)
 
@@ -33,7 +33,7 @@ cargo build
 cargo test
 
 # Run with example config
-cargo run -- --config revolution-idle-config.json
+cargo run -- --config example-configs/config.json
 ```
 
 ## 📝 **How to Contribute**
@@ -70,7 +70,7 @@ cargo fmt --check
 cargo clippy -- -D warnings
 
 # Test with example configs
-cargo run -- --config revolution-idle-config.json
+cargo run -- --config example-configs/config.json
 ```
 
 ### 5. Commit and Push
