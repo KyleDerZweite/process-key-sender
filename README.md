@@ -267,7 +267,7 @@ You can save and load configurations using JSON files:
 
 ## Examples
 
-### ✅ Safe Gaming Automation (Offline/Single-player only)
+### Safe Gaming Automation (Offline/Single-player only)
 
 #### Auto-reload and healing sequence
 ```bash
@@ -293,7 +293,7 @@ pks --process farming-sim.exe --sequence "w:1000,e:2000,s:1000" --repeat-count 1
 pks --process game.exe --sequence "f5:30000" --verbose
 ```
 
-### ✅ Development Testing
+### Development Testing
 
 #### Web development refresh cycle
 ```bash
@@ -307,7 +307,7 @@ pks --process vscode.exe --sequence "ctrl+s:500,alt+tab:200,f5:1000,alt+tab:500"
 pks --process terminal.exe --sequence "ctrl+c:100,up:100,enter:5000,ctrl+c:100"
 ```
 
-### ✅ Productivity Automation
+### Productivity Automation
 
 #### Presentation auto-advance
 ```bash
@@ -321,7 +321,7 @@ pks --process powerpoint.exe --key "right" --interval 10000
 pks --process document-viewer.exe --sequence "pagedown:5000" --repeat-count 20
 ```
 
-### ✅ Accessibility Assistance
+### Accessibility Assistance
 
 #### Regular interaction for users with limited mobility
 ```bash
@@ -331,9 +331,9 @@ pks --process app.exe --sequence "shift:30000" --verbose
 
 ## Platform Support
 
-- ✅ **Windows** - Full support using Windows API
-- 🚧 **Linux** - Basic support (X11 implementation in progress)
-- 🚧 **macOS** - Planned support
+- **Windows** - Full support using Windows API
+- **Linux** - Basic support (X11 implementation in progress)
+- **macOS** - Planned support
 
 ## Contributing
 
@@ -397,9 +397,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Author
 
 **KyleDerZweite** - [GitHub](https://github.com/KyleDerZweite)
-
----
-
-⭐ If you find this tool useful, please consider giving it a star on GitHub!
 
 **Remember: Use responsibly and ethically. When in doubt, don't use it with online games!**
