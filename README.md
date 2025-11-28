@@ -1,5 +1,7 @@
 # Process Key Sender (pks)
 
+> IMPORTANT: This project is under development and is not a stable, released product. It is provided "as-is", without warranty or guarantee. It works to some extent, but may be incomplete, unstable, or contain bugs. Mentions of a version such as "v2" do not imply an official release.
+
 A cross-platform command-line tool for sending keystrokes to specific processes at configurable intervals. Perfect for gaming automation, testing, or any scenario where you need to send repeated keystrokes to a specific application.
 
 ## ⚠️ **IMPORTANT DISCLAIMER**
