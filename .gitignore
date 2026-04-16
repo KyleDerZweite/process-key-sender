@@ -1,6 +1,5 @@
 # Rust
 /target/
-Cargo.lock
 **/*.rs.bk
 *.pdb
 
@@ -31,5 +30,7 @@ Thumbs.db
 # Local config files (but keep examples)
 *.json
 
-# Keep example configs
-!example-*.json
+# Keep tracked example configs
+!examples/
+!examples/configs/
+!examples/configs/*.json

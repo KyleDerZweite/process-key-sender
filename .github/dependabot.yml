@@ -1,6 +1,5 @@
 version: 2
 updates:
-  # Rust/Cargo dependencies
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:
@@ -9,10 +8,6 @@ updates:
       time: "09:00"
       timezone: "UTC"
     open-pull-requests-limit: 5
-    reviewers:
-      - "KyleDerZweite"
-    assignees:
-      - "KyleDerZweite"
     commit-message:
       prefix: "deps"
       prefix-development: "deps-dev"
@@ -20,22 +15,26 @@ updates:
     labels:
       - "dependencies"
       - "rust"
-    # Group related updates to reduce PR noise
     groups:
-      rust-ecosystem:
+      cli-and-config:
+        patterns:
+          - "clap*"
+          - "serde*"
+          - "serde_json"
+          - "anyhow"
+          - "thiserror"
+      runtime:
         patterns:
           - "tokio*"
-          - "serde*"
-          - "anyhow"
-          - "clap*"
-          - "env_logger"
+          - "sysinfo"
+          - "global-hotkey"
           - "colored"
-      windows-apis:
+          - "tracing*"
+      windows:
         patterns:
           - "winapi*"
           - "windows*"
 
-  # GitHub Actions dependencies
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -43,10 +42,6 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "UTC"
-    reviewers:
-      - "KyleDerZweite"
-    assignees:
-      - "KyleDerZweite"
     commit-message:
       prefix: "ci"
     labels:

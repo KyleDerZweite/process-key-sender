@@ -1,0 +1,19 @@
+{
+  "process_name": "your-game.exe",
+  "key_sequence": [],
+  "independent_keys": [
+    {
+      "key": "r",
+      "interval": "1000ms"
+    },
+    {
+      "key": "a",
+      "interval": "5000ms"
+    }
+  ],
+  "max_retries": 10,
+  "pause_hotkey": "ctrl+alt+r",
+  "verbose": true,
+  "loop_sequence": true,
+  "repeat_count": 0
+}

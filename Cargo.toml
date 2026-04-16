@@ -1,6 +1,6 @@
 [package]
 name = "process-key-sender"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["KyleDerZweite <kyle@process-key-sender.dev>"]
 description = "Cross-platform keystroke automation tool for specific processes"
@@ -31,6 +31,8 @@ global-hotkey = "0.5"
 winapi = { version = "0.3", features = ["winuser", "processthreadsapi", "psapi"] }
 
 [dev-dependencies]
+assert_cmd = "2.2"
+predicates = "3.1"
 tempfile = "3.0"
 
 [lib]

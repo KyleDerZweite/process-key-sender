@@ -17,6 +17,7 @@
 //! assert_eq!(config.process_name, "notepad.exe");
 //! ```
 
+use crate::key_sender::SendOptions;
 use anyhow::Result;
 use serde::{Deserialize, Deserializer};
 use std::time::Duration;
@@ -147,9 +148,14 @@ fn default_restore_focus() -> bool {
     true
 }
 
-// ... rest of the config.rs implementation stays the same ...
-
 impl Config {
+    /// Translate config settings into runtime send options.
+    pub fn send_options(&self) -> SendOptions {
+        SendOptions {
+            restore_focus: self.restore_focus,
+        }
+    }
+
     /// Load configuration from a JSON file
     pub fn from_file(path: &str) -> Result<Self> {
         let content = std::fs::read_to_string(path)
@@ -380,5 +386,25 @@ mod tests {
         config.process_name = "test.exe".to_string();
         config.independent_keys.clear();
         assert!(config.validate().is_err());
+    }
+
+    #[test]
+    fn test_send_options_mapping() {
+        let config = Config {
+            process_name: "test.exe".to_string(),
+            key_sequence: vec![KeyAction {
+                key: "space".to_string(),
+                interval_after: Duration::from_millis(1000),
+            }],
+            independent_keys: vec![],
+            max_retries: 10,
+            pause_hotkey: "ctrl+alt+r".to_string(),
+            verbose: false,
+            loop_sequence: true,
+            repeat_count: 0,
+            restore_focus: false,
+        };
+
+        assert!(!config.send_options().restore_focus);
     }
 }

@@ -1,38 +1,35 @@
 ---
 name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
-assignees: ''
-
+about: Report a reproducible problem with the CLI, config handling, or platform behavior
+title: ""
+labels: bug
+assignees: ""
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+## Summary
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+Describe the problem clearly and concisely.
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+## Environment
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+- OS:
+- `rustc --version`:
+- `pks --version`:
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+## Reproduction
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+1. Command run:
+2. Config file used, if any:
+3. What happened:
 
-**Additional context**
-Add any other context about the problem here.
+## Expected Behavior
+
+Describe what you expected instead.
+
+## Logs or Error Output
+
+Paste relevant terminal output here.
+
+## Additional Context
+
+Include anything else that helps reproduce or diagnose the issue.

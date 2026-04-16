@@ -1,7 +1,7 @@
 //! # Process Key Sender
 //!
-//! A cross-platform command-line tool for sending keystrokes to specific processes
-//! at configurable intervals.
+//! A command-line tool for sending keystrokes to specific processes at
+//! configurable intervals.
 //!
 //! ## Features
 //!
@@ -10,12 +10,13 @@
 //! - Independent key timers for simultaneous automation
 //! - Global hotkey for pause/resume functionality
 //! - JSON configuration file support
-//! - Cross-platform support (Windows, Linux planned)
+//! - Supported automation on Windows, with limited Unix/Linux support for
+//!   configuration parsing and validation
 //!
 //! ## Example
 //!
 //! ```no_run
-//! use process_key_sender::{Config, KeySender, ProcessFinder};
+//! use process_key_sender::{KeySender, ProcessFinder, SendOptions};
 //!
 //! // Create components
 //! let mut finder = ProcessFinder::new();
@@ -24,7 +25,9 @@
 //! // Find a process
 //! if let Ok(Some(pid)) = finder.find_process_window("notepad") {
 //!     // Send a key
-//!     sender.send_key_to_window(pid, "space").unwrap();
+//!     sender
+//!         .send_key_to_window_with_options(pid, "space", SendOptions::default())
+//!         .unwrap();
 //! }
 //! ```
 //!
@@ -42,14 +45,16 @@
 //! }
 //! ```
 
+pub mod cli;
 pub mod config;
 pub mod error;
 pub mod global_hotkey;
 pub mod key_sender;
 pub mod process_finder;
+pub mod runner;
 
 pub use config::Config;
 pub use error::{PksError, Result};
 pub use global_hotkey::HotkeyManager;
-pub use key_sender::KeySender;
+pub use key_sender::{KeySender, SendOptions};
 pub use process_finder::ProcessFinder;

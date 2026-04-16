@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-04-16
+
+### Changed
+- Split the binary entrypoint into dedicated CLI and runner modules
+- Reorganized repository docs into `docs/` and moved example configs to `examples/configs/`
+- Simplified the README and aligned contributor and security documentation with current behavior
+- Streamlined CI into a smaller quality/build workflow and refreshed Dependabot grouping
+
+### Fixed
+- Removed duplicate module wiring in `src/main.rs`, eliminating double compilation of internal modules
+- Made `restore_focus` an active runtime option instead of dead configuration
+- Tightened key validation so unsupported keys fail consistently on Unix and Windows
+- Fixed `.gitignore` so tracked example configs remain versioned and `Cargo.lock` stays reproducible
+
 ## [0.2.0] - 2025-11-26
 
 ### Added
@@ -56,7 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Configuration Files**: Save and load settings from JSON files
 - **Cross-platform**: Windows support (Linux planned)
 
-[Unreleased]: https://github.com/KyleDerZweite/process-key-sender/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/KyleDerZweite/process-key-sender/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/KyleDerZweite/process-key-sender/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/KyleDerZweite/process-key-sender/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/KyleDerZweite/process-key-sender/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/KyleDerZweite/process-key-sender/releases/tag/v0.1.0

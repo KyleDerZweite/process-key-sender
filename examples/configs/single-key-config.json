@@ -1,0 +1,15 @@
+{
+  "process_name": "your-application.exe",
+  "key_sequence": [
+    {
+      "key": "space",
+      "interval_after": "2000ms"
+    }
+  ],
+  "independent_keys": [],
+  "max_retries": 5,
+  "pause_hotkey": "ctrl+shift+p",
+  "verbose": false,
+  "loop_sequence": true,
+  "repeat_count": 0
+}

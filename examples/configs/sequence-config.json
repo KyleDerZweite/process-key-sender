@@ -1,0 +1,23 @@
+{
+  "process_name": "productivity-app.exe",
+  "key_sequence": [
+    {
+      "key": "1",
+      "interval_after": "500ms"
+    },
+    {
+      "key": "2",
+      "interval_after": "500ms"
+    },
+    {
+      "key": "3",
+      "interval_after": "1000ms"
+    }
+  ],
+  "independent_keys": [],
+  "max_retries": 10,
+  "pause_hotkey": "ctrl+alt+p",
+  "verbose": true,
+  "loop_sequence": true,
+  "repeat_count": 5
+}

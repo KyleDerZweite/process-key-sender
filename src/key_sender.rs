@@ -1,8 +1,9 @@
 //! Keyboard input simulation for sending keystrokes to windows.
 //!
 //! This module provides platform-specific key sending functionality.
-//! On Windows, it uses the Windows API (`SendInput`). Linux support
-//! is planned for a future release.
+//! On Windows, it uses the Windows API (`SendInput`). On Unix/Linux,
+//! configuration parsing and validation are available, but sending keys to
+//! other processes is not currently supported.
 //!
 //! # Supported Keys
 //!
@@ -46,6 +47,19 @@ use winapi::um::winuser::{
 /// // Send a key to a window (requires valid window ID)
 /// // sender.send_key_to_window(12345, "space").unwrap();
 /// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SendOptions {
+    pub restore_focus: bool,
+}
+
+impl Default for SendOptions {
+    fn default() -> Self {
+        Self {
+            restore_focus: true,
+        }
+    }
+}
+
 pub struct KeySender {
     #[cfg(windows)]
     key_map: HashMap<String, u32>,
@@ -107,6 +121,7 @@ impl KeySender {
             key_map.insert("end".to_string(), 0x23);
             key_map.insert("pageup".to_string(), 0x21);
             key_map.insert("pagedown".to_string(), 0x22);
+            key_map.insert("insert".to_string(), 0x2D);
 
             Ok(Self { key_map })
         }
@@ -120,39 +135,50 @@ impl KeySender {
     }
 
     pub fn parse_key_for_validation(&self, key: &str) -> Result<()> {
+        validate_key_expression(key)?;
+
         #[cfg(windows)]
         {
-            let _ = self.parse_key_windows(key)?;
+            if key.contains('+') {
+                for part in key.split('+') {
+                    let _ = self.parse_key_windows(part)?;
+                }
+            } else {
+                let _ = self.parse_key_windows(key)?;
+            }
             Ok(())
         }
 
         #[cfg(unix)]
         {
-            if key.trim().is_empty() {
-                anyhow::bail!("Key cannot be empty");
-            }
             Ok(())
         }
     }
 
     pub fn send_key_to_window(&self, window_id: u64, key: &str) -> Result<()> {
+        self.send_key_to_window_with_options(window_id, key, SendOptions::default())
+    }
+
+    pub fn send_key_to_window_with_options(
+        &self,
+        window_id: u64,
+        key: &str,
+        options: SendOptions,
+    ) -> Result<()> {
         #[cfg(windows)]
         {
             let pid = window_id as u32;
 
-            // Try to find the actual window handle
             if let Some(hwnd) = self.find_window_by_pid(pid) {
-                // Method: Focus window temporarily, send key, restore focus
-                self.send_key_with_focus_restore(hwnd, key)
+                self.send_key_with_focus_option(hwnd, key, options.restore_focus)
             } else {
-                // Fallback: Global SendInput
                 self.send_key_global_windows(key)
             }
         }
 
         #[cfg(unix)]
         {
-            self.send_key_unix(window_id, key)
+            self.send_key_unix(window_id, key, options)
         }
     }
 
@@ -197,27 +223,19 @@ impl KeySender {
     }
 
     #[cfg(windows)]
-    fn send_key_with_focus_restore(&self, hwnd: HWND, key: &str) -> Result<()> {
-        // Store current foreground window to restore later
+    fn send_key_with_focus_option(&self, hwnd: HWND, key: &str, restore_focus: bool) -> Result<()> {
         let original_window = unsafe { GetForegroundWindow() };
-
-        // Only change focus if the target window is not already focused
         let needs_focus_change = original_window != hwnd;
 
         if needs_focus_change {
-            // Bring target window to foreground
             self.ensure_window_focus(hwnd)?;
         }
 
-        // Send the key using global SendInput
         let result = self.send_key_global_windows(key);
 
-        // Restore original window focus if we changed it
-        if needs_focus_change && !original_window.is_null() {
-            // Small delay to ensure the key is processed
+        if restore_focus && needs_focus_change && !original_window.is_null() {
             std::thread::sleep(std::time::Duration::from_millis(50));
 
-            // Restore focus to original window
             unsafe {
                 SetForegroundWindow(original_window);
                 SetActiveWindow(original_window);
@@ -406,9 +424,8 @@ impl KeySender {
 
     #[cfg(windows)]
     fn parse_key_windows(&self, key: &str) -> Result<u32> {
-        let key_lower = key.to_lowercase();
+        let key_lower = key.trim().to_lowercase();
 
-        // Check map first
         if let Some(&vk_code) = self.key_map.get(&key_lower) {
             return Ok(vk_code);
         }
@@ -417,7 +434,96 @@ impl KeySender {
     }
 
     #[cfg(unix)]
-    fn send_key_unix(&self, _window_id: u64, _key: &str) -> Result<()> {
-        anyhow::bail!("Unix key sending not yet implemented")
+    fn send_key_unix(&self, _window_id: u64, _key: &str, _options: SendOptions) -> Result<()> {
+        anyhow::bail!("key sending is not supported on Unix/Linux")
+    }
+}
+
+fn validate_key_expression(key: &str) -> Result<()> {
+    let normalized = key.trim().to_lowercase();
+    if normalized.is_empty() {
+        anyhow::bail!("Key cannot be empty");
+    }
+
+    let parts: Vec<&str> = normalized.split('+').map(str::trim).collect();
+    if parts.iter().any(|part| part.is_empty()) {
+        anyhow::bail!("Invalid key combination: {}", key);
+    }
+
+    if parts.len() == 1 {
+        return validate_single_key(parts[0], key);
+    }
+
+    let (main_key, modifiers) = parts.split_last().unwrap();
+    for modifier in modifiers {
+        if !is_modifier_key(modifier) {
+            anyhow::bail!(
+                "Invalid modifier '{}' in key combination '{}'",
+                modifier,
+                key
+            );
+        }
+    }
+
+    if !is_non_modifier_key(main_key) {
+        anyhow::bail!(
+            "Unsupported key '{}' in key combination '{}'",
+            main_key,
+            key
+        );
+    }
+
+    Ok(())
+}
+
+fn validate_single_key(key: &str, original: &str) -> Result<()> {
+    if is_modifier_key(key) || is_non_modifier_key(key) {
+        return Ok(());
+    }
+
+    anyhow::bail!("Unsupported key: {}", original)
+}
+
+fn is_modifier_key(key: &str) -> bool {
+    matches!(key, "shift" | "ctrl" | "control" | "alt")
+}
+
+fn is_non_modifier_key(key: &str) -> bool {
+    matches!(
+        key,
+        "space"
+            | "enter"
+            | "return"
+            | "tab"
+            | "escape"
+            | "esc"
+            | "backspace"
+            | "delete"
+            | "insert"
+            | "home"
+            | "end"
+            | "pageup"
+            | "pagedown"
+            | "left"
+            | "right"
+            | "up"
+            | "down"
+    ) || is_ascii_letter(key)
+        || is_ascii_digit(key)
+        || is_function_key(key)
+}
+
+fn is_ascii_letter(key: &str) -> bool {
+    key.len() == 1 && key.as_bytes()[0].is_ascii_alphabetic()
+}
+
+fn is_ascii_digit(key: &str) -> bool {
+    key.len() == 1 && key.as_bytes()[0].is_ascii_digit()
+}
+
+fn is_function_key(key: &str) -> bool {
+    match key.strip_prefix('f') {
+        Some(number) => matches!(number.parse::<u8>(), Ok(1..=12)),
+        None => false,
     }
 }
