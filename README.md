@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/KyleDerZweite/process-key-sender/actions/workflows/ci.yml/badge.svg)](https://github.com/KyleDerZweite/process-key-sender/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/KyleDerZweite/process-key-sender)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/KyleDerZweite/process-key-sender?display_name=tag)](https://github.com/KyleDerZweite/process-key-sender/releases/tag/v0.2.1)
 
 `pks` is a Rust CLI for sending keystrokes to a target process on a schedule. It supports quick single-key automation from the command line and richer sequence or timer setups through JSON config files.
 
