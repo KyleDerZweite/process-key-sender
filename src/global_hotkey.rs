@@ -11,7 +11,7 @@
 //! - `alt+f1` - Alt + F1
 
 use anyhow::Result;
-use global_hotkey::{GlobalHotKeyEvent, GlobalHotKeyManager, HotKeyState};
+use global_hotkey::{GlobalHotKeyEvent, GlobalHotKeyManager, HotKeyState as GlobalHotKeyState};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::sync::watch;
@@ -22,9 +22,41 @@ use tokio::sync::watch;
 /// provides a way to check and respond to pause state changes.
 pub struct HotkeyManager {
     manager: GlobalHotKeyManager,
+    pause_state: PauseState,
+}
+
+/// Thread-safe pause state shared with automation tasks.
+#[derive(Clone)]
+pub struct PauseState {
     is_paused: Arc<AtomicBool>,
     pause_sender: watch::Sender<bool>,
-    pause_receiver: watch::Receiver<bool>,
+}
+
+impl PauseState {
+    pub fn get_pause_receiver(&self) -> watch::Receiver<bool> {
+        self.pause_sender.subscribe()
+    }
+
+    pub fn is_paused(&self) -> bool {
+        self.is_paused.load(Ordering::Relaxed)
+    }
+
+    fn toggle(&self) {
+        let current_state = self.is_paused.load(Ordering::Relaxed);
+        let new_state = !current_state;
+
+        self.is_paused.store(new_state, Ordering::Relaxed);
+
+        if let Err(error) = self.pause_sender.send(new_state) {
+            eprintln!("Failed to send pause state: {}", error);
+        }
+
+        if new_state {
+            println!("⏸️  Automation PAUSED (press hotkey again to resume)");
+        } else {
+            println!("▶️  Automation RESUMED");
+        }
+    }
 }
 
 impl HotkeyManager {
@@ -33,13 +65,14 @@ impl HotkeyManager {
             .map_err(|e| anyhow::anyhow!("Failed to create GlobalHotKeyManager: {}", e))?;
 
         let is_paused = Arc::new(AtomicBool::new(false));
-        let (pause_sender, pause_receiver) = watch::channel(false);
+        let (pause_sender, _) = watch::channel(false);
 
         Ok(Self {
             manager,
-            is_paused,
-            pause_sender,
-            pause_receiver,
+            pause_state: PauseState {
+                is_paused,
+                pause_sender,
+            },
         })
     }
 
@@ -57,36 +90,19 @@ impl HotkeyManager {
         Ok(())
     }
 
-    pub fn get_pause_receiver(&self) -> watch::Receiver<bool> {
-        self.pause_receiver.clone()
+    pub fn pause_state(&self) -> PauseState {
+        self.pause_state.clone()
     }
 
-    pub fn is_paused(&self) -> bool {
-        self.is_paused.load(Ordering::Relaxed)
-    }
-
-    pub async fn start_hotkey_listener(self: Arc<Self>) -> Result<()> {
+    pub async fn start_hotkey_listener(&self) -> Result<()> {
         let receiver = GlobalHotKeyEvent::receiver();
-        let manager = self.clone();
+        let pause_state = self.pause_state.clone();
 
         tokio::task::spawn_blocking(move || {
             loop {
                 if let Ok(event) = receiver.try_recv() {
-                    if event.state == HotKeyState::Pressed {
-                        let current_state = manager.is_paused.load(Ordering::Relaxed);
-                        let new_state = !current_state;
-
-                        manager.is_paused.store(new_state, Ordering::Relaxed);
-
-                        if let Err(e) = manager.pause_sender.send(new_state) {
-                            eprintln!("Failed to send pause state: {}", e);
-                        }
-
-                        if new_state {
-                            println!("⏸️  Automation PAUSED (press hotkey again to resume)");
-                        } else {
-                            println!("▶️  Automation RESUMED");
-                        }
+                    if event.state == GlobalHotKeyState::Pressed {
+                        pause_state.toggle();
                     }
                 }
 

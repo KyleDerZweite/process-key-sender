@@ -1,13 +1,12 @@
 use anyhow::Result;
 use colored::Colorize;
-use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;
 use tracing_subscriber::EnvFilter;
 
 use crate::cli::Cli;
 use crate::config::{parse_duration, Config, KeyAction};
-use crate::{HotkeyManager, KeySender, ProcessFinder};
+use crate::{HotkeyManager, KeySender, PauseState, ProcessFinder};
 
 /// Initialize tracing based on the requested verbosity.
 pub fn init_tracing(verbose: bool) {
@@ -52,11 +51,11 @@ pub async fn run(cli: Cli) -> Result<()> {
 
     let mut hotkey_manager = HotkeyManager::new()?;
     hotkey_manager.register_pause_hotkey(&config.pause_hotkey)?;
-    let hotkey_manager = Arc::new(hotkey_manager);
+    let pause_state = hotkey_manager.pause_state();
 
-    hotkey_manager.clone().start_hotkey_listener().await?;
+    hotkey_manager.start_hotkey_listener().await?;
 
-    run_automation(config, &mut process_finder, &key_sender, hotkey_manager).await
+    run_automation(config, &mut process_finder, &key_sender, pause_state).await
 }
 
 fn load_config_file(config_file: &str) -> Result<Config> {
@@ -238,16 +237,16 @@ async fn run_automation(
     config: Config,
     process_finder: &mut ProcessFinder,
     key_sender: &KeySender,
-    hotkey_manager: Arc<HotkeyManager>,
+    pause_state: PauseState,
 ) -> Result<()> {
     let window_id = find_target_process(&config, process_finder).await?;
 
     println!("{} Process found! Starting automation...", "✓".green());
 
     if !config.independent_keys.is_empty() {
-        run_independent_keys(&config, key_sender, window_id, hotkey_manager).await
+        run_independent_keys(&config, key_sender, window_id, pause_state).await
     } else {
-        run_key_sequence(&config, key_sender, window_id, hotkey_manager).await
+        run_key_sequence(&config, key_sender, window_id, pause_state).await
     }
 }
 
@@ -298,12 +297,12 @@ async fn run_independent_keys(
     config: &Config,
     key_sender: &KeySender,
     window_id: u64,
-    hotkey_manager: Arc<HotkeyManager>,
+    pause_state: PauseState,
 ) -> Result<()> {
     println!("{} Starting independent keys automation...", "🚀".green());
 
     let mut handles = Vec::new();
-    let mut pause_receiver = hotkey_manager.get_pause_receiver();
+    let mut pause_receiver = pause_state.get_pause_receiver();
     let send_options = config.send_options();
 
     for independent_key in &config.independent_keys {
@@ -311,11 +310,11 @@ async fn run_independent_keys(
         let interval = independent_key.interval;
         let sender = key_sender.clone();
         let verbose = config.verbose;
-        let hotkey_clone = hotkey_manager.clone();
+        let pause_state = pause_state.clone();
 
         let handle = tokio::spawn(async move {
             loop {
-                if hotkey_clone.is_paused() {
+                if pause_state.is_paused() {
                     tokio::time::sleep(Duration::from_millis(100)).await;
                     continue;
                 }
@@ -359,12 +358,12 @@ async fn run_key_sequence(
     config: &Config,
     key_sender: &KeySender,
     window_id: u64,
-    hotkey_manager: Arc<HotkeyManager>,
+    pause_state: PauseState,
 ) -> Result<()> {
     println!("{} Starting key sequence automation...", "🚀".green());
 
     let mut iteration = 0u32;
-    let mut pause_receiver = hotkey_manager.get_pause_receiver();
+    let mut pause_receiver = pause_state.get_pause_receiver();
     let send_options = config.send_options();
 
     loop {
@@ -386,7 +385,7 @@ async fn run_key_sequence(
                 return Ok(());
             }
 
-            while hotkey_manager.is_paused() {
+            while pause_state.is_paused() {
                 if tokio::time::timeout(Duration::from_millis(100), tokio::signal::ctrl_c())
                     .await
                     .is_ok()

@@ -55,6 +55,6 @@ pub mod runner;
 
 pub use config::Config;
 pub use error::{PksError, Result};
-pub use global_hotkey::HotkeyManager;
+pub use global_hotkey::{HotkeyManager, PauseState};
 pub use key_sender::{KeySender, SendOptions};
 pub use process_finder::ProcessFinder;
