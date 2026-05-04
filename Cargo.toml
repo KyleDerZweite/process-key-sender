@@ -25,7 +25,7 @@ thiserror = "2.0.18"
 tokio = { version = "1.52.1", features = ["full"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
-global-hotkey = "0.7.0"
+global-hotkey = "0.8.0"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3.9", features = ["winuser", "processthreadsapi", "psapi"] }
