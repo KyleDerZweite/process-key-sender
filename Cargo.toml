@@ -3,10 +3,10 @@ name = "process-key-sender"
 version = "0.2.1"
 edition = "2021"
 authors = ["KyleDerZweite <kyle@process-key-sender.dev>"]
-description = "Cross-platform keystroke automation tool for specific processes"
+description = "Send keys, shortcuts, and timed key sequences to a target Windows application"
 repository = "https://github.com/KyleDerZweite/process-key-sender"
 license = "MIT"
-keywords = ["automation", "cli", "cross-platform", "accessibility", "productivity"]
+keywords = ["keystroke", "keyboard", "automation", "windows", "cli"]
 categories = ["command-line-utilities", "accessibility"]
 rust-version = "1.85.0"
 

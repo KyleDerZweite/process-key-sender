@@ -1,10 +1,10 @@
-# Process Key Sender
+# Process Key Sender — Send Keystrokes to a Target Application
 
 [![CI](https://github.com/KyleDerZweite/process-key-sender/actions/workflows/ci.yml/badge.svg)](https://github.com/KyleDerZweite/process-key-sender/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/KyleDerZweite/process-key-sender)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/KyleDerZweite/process-key-sender?display_name=tag)](https://github.com/KyleDerZweite/process-key-sender/releases/tag/v0.2.1)
 
-`pks` is a Rust CLI for sending keystrokes to a target process on a schedule. It supports quick single-key automation from the command line and richer sequence or timer setups through JSON config files.
+`pks` is a Windows keystroke automation CLI that finds a target application by process name and sends it single keys, keyboard shortcuts, or timed key sequences. Use the command line for simple repeating keys or JSON config files for sequences and independent timers.
 
 ## Safety
 
@@ -16,6 +16,15 @@ Use this tool only for legitimate local automation, accessibility, testing, and 
 - Unix/Linux: config parsing, validation, and most tests work, but key sending is not implemented.
 
 More detail: [docs/platform-support.md](docs/platform-support.md)
+
+## Supported Keyboard Input
+
+- Letters, numbers, arrows, navigation keys, and `F1`–`F12`
+- Special keys such as `space`, `enter`, `tab`, `escape`, and `delete`
+- Shortcuts and key combinations such as `ctrl+c`, `alt+tab`, and `ctrl+shift+s`
+- Timed sequences and independently repeating keys
+
+On Windows, `pks` finds the chosen application's visible window, focuses it, sends the keyboard input through the Windows `SendInput` API, and can restore the previously focused window afterward.
 
 ## Build
 
