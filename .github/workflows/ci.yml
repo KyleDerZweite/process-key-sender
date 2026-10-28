@@ -35,7 +35,7 @@ jobs:
       - name: Format check
         run: cargo fmt --all -- --check
       - name: Clippy
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --all-targets --locked -- -D warnings
       - name: Run tests
         run: cargo test --all-targets --locked
       - name: Run doc tests
@@ -48,19 +48,27 @@ jobs:
           RUSTDOCFLAGS: -D warnings
 
   build:
-    name: Build (${{ matrix.os }})
+    name: Build (${{ matrix.os }}, Rust ${{ matrix.toolchain }})
     strategy:
+      max-parallel: 2
       matrix:
         os: [ubuntu-latest, windows-latest]
+        toolchain: [stable, "1.85.0"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.toolchain }}
       - uses: Swatinem/rust-cache@v2
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y libx11-dev libxtst-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev
+      - name: Test hotkey aliases
+        run: cargo test --lib global_hotkey::tests --locked
+      - name: Test process discovery
+        run: cargo test --test process_finder_test --locked
       - name: Build
         run: cargo build --release --locked

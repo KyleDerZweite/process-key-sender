@@ -31,12 +31,16 @@ Run these before opening a pull request:
 
 ```bash
 cargo fmt --all -- --check
-cargo clippy --all-targets -- -D warnings
-cargo test --all-targets
-cargo test --doc
+cargo clippy --all-targets --locked -- -D warnings
+cargo test --all-targets --locked
+cargo test --doc --locked
 cargo build --release --locked
 cargo deny check
 ```
+
+CI also builds with Rust 1.85.0 and stable on Linux and Windows. To check the minimum supported Rust version locally, install that toolchain and run `cargo +1.85.0 test --all-targets --locked` and `cargo +1.85.0 build --release --locked`. Windows runtime hotkey registration and key sending still require validation on a Windows desktop.
+
+Keep `sysinfo` on 0.36.x while the minimum Rust version is 1.85. Releases starting at 0.37 require Rust 1.88. Revisit the manifest and Dependabot constraint together when raising the minimum.
 
 ## Change Expectations
 

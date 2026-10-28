@@ -50,7 +50,7 @@ impl ProcessFinder {
     }
 
     pub fn find_process_window(&mut self, process_name: &str) -> Result<Option<u64>> {
-        // Refresh all processes (new sysinfo 0.37+ API)
+        // Refresh all processes and remove exited entries.
         self.system.refresh_processes(ProcessesToUpdate::All, true);
 
         let process_name_lower = process_name.to_lowercase();
@@ -80,7 +80,7 @@ impl ProcessFinder {
     #[deprecated]
     #[allow(dead_code)]
     pub fn is_process_running(&mut self, process_name: &str) -> Result<bool> {
-        // Refresh all processes (new sysinfo 0.37+ API)
+        // Refresh all processes and remove exited entries.
         self.system.refresh_processes(ProcessesToUpdate::All, true);
 
         let process_name_lower = process_name.to_lowercase();

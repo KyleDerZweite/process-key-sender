@@ -133,7 +133,7 @@ fn parse_hotkey(hotkey_str: &str) -> Result<global_hotkey::hotkey::HotKey> {
             "ctrl" | "control" => modifiers |= Modifiers::CONTROL,
             "alt" => modifiers |= Modifiers::ALT,
             "shift" => modifiers |= Modifiers::SHIFT,
-            "meta" | "cmd" | "super" => modifiers |= Modifiers::SUPER,
+            "meta" | "cmd" | "super" => modifiers |= Modifiers::META,
             key => {
                 if key_code.is_some() {
                     return Err(anyhow::anyhow!(
@@ -233,4 +233,37 @@ fn parse_key_code(key: &str) -> Result<global_hotkey::hotkey::Code> {
     };
 
     Ok(code)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_hotkey;
+    use global_hotkey::hotkey::{Code, HotKey, Modifiers};
+
+    #[test]
+    fn meta_aliases_preserve_the_platform_meta_modifier() {
+        for alias in ["meta", "cmd", "super"] {
+            let hotkey = parse_hotkey(&format!("{alias}+r")).unwrap();
+            assert_eq!(hotkey, HotKey::new(Some(Modifiers::META), Code::KeyR));
+
+            let combined =
+                parse_hotkey(&format!(" CTRL + {} + Shift + R ", alias.to_uppercase())).unwrap();
+            assert_eq!(
+                combined,
+                HotKey::new(
+                    Some(Modifiers::CONTROL | Modifiers::META | Modifiers::SHIFT),
+                    Code::KeyR,
+                ),
+            );
+        }
+    }
+
+    #[test]
+    fn meta_aliases_still_require_exactly_one_key() {
+        for alias in ["meta", "cmd", "super"] {
+            assert!(parse_hotkey(alias).is_err());
+            assert!(parse_hotkey(&format!("{alias}+r+s")).is_err());
+            assert!(parse_hotkey(&format!("{alias}+unsupported")).is_err());
+        }
+    }
 }
