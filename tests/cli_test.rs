@@ -61,5 +61,5 @@ fn test_binary_version_output_reports_current_release() {
         .arg("--version")
         .assert()
         .success()
-        .stdout(contains("0.2.1"));
+        .stdout(contains(env!("CARGO_PKG_VERSION")));
 }

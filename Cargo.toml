@@ -1,11 +1,11 @@
 [package]
 name = "process-key-sender"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 authors = ["KyleDerZweite <kyle@process-key-sender.dev>"]
 description = "Send keys, shortcuts, and timed key sequences to a target Windows application"
 repository = "https://github.com/KyleDerZweite/process-key-sender"
-license = "MIT"
+license = "Unlicense"
 keywords = ["keystroke", "keyboard", "automation", "windows", "cli"]
 categories = ["command-line-utilities", "accessibility"]
 rust-version = "1.85.0"

@@ -3,6 +3,7 @@
 # Note: All licenses not in this list are denied by default
 allow = [
     "MIT",
+    "Unlicense",
     "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception",
     "MPL-2.0",

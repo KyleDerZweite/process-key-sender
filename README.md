@@ -2,9 +2,13 @@
 
 [![CI](https://github.com/KyleDerZweite/process-key-sender/actions/workflows/ci.yml/badge.svg)](https://github.com/KyleDerZweite/process-key-sender/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/KyleDerZweite/process-key-sender)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/KyleDerZweite/process-key-sender?display_name=tag)](https://github.com/KyleDerZweite/process-key-sender/releases/tag/v0.2.1)
+[![Release](https://img.shields.io/github/v/release/KyleDerZweite/process-key-sender?display_name=tag)](https://github.com/KyleDerZweite/process-key-sender/releases/latest)
 
 `pks` is a Windows keystroke automation CLI that finds a target application by process name and sends it single keys, keyboard shortcuts, or timed key sequences. Use the command line for simple repeating keys or JSON config files for sequences and independent timers.
+
+## Project status
+
+I have ended maintenance of Process Key Sender and archived this repository. The source is available under [the Unlicense](LICENSE). You are welcome to use it, modify it, or maintain a fork. If you maintain a fork, feel free to [drop me a note](mailto:info@kylehub.dev).
 
 ## Safety
 
@@ -60,6 +64,6 @@ cargo run -- --process notepad.exe --key space --save-config my-config.json
 - Configuration guide: [docs/configuration.md](docs/configuration.md)
 - Platform support: [docs/platform-support.md](docs/platform-support.md)
 
-## Contributing
+## Development
 
-Development setup, verification commands, and contribution guidelines are in [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and verification commands for forks.

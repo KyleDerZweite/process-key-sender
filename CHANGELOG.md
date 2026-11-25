@@ -5,7 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.2] - 2026-11-25
+
+### Changed
+- Refreshed dependencies and updated GitHub Actions checkout while retaining Rust 1.85 support.
+- Released the project under the Unlicense and ended maintenance.
+
+### Fixed
+- Updated the transitive `rustix` dependency to 1.1.6 for RUSTSEC-2026-0486.
 
 ## [0.2.1] - 2026-04-16
 
@@ -70,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Configuration Files**: Save and load settings from JSON files
 - **Cross-platform**: Windows support (Linux planned)
 
-[Unreleased]: https://github.com/KyleDerZweite/process-key-sender/compare/v0.2.1...HEAD
+[0.2.2]: https://github.com/KyleDerZweite/process-key-sender/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/KyleDerZweite/process-key-sender/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/KyleDerZweite/process-key-sender/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/KyleDerZweite/process-key-sender/compare/v0.1.0...v0.1.1
