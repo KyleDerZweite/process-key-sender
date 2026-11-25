@@ -2,17 +2,7 @@
 
 ## Supported Versions
 
-| Version | Supported |
-| ------- | --------- |
-| 0.2.x   | Yes       |
-| 0.1.x   | No        |
-
-## Reporting a Vulnerability
-
-Please do not file public issues for security reports.
-
-- Email: [info@kylehub.dev](mailto:info@kylehub.dev)
-- Include: affected version, reproduction steps, impact, and any suggested mitigation
+The project is archived. Security support has ended for all versions.
 
 ## Project Security Notes
 

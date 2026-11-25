@@ -1,5 +1,7 @@
 # Contributing to Process Key Sender
 
+This repository is archived. The development instructions below are available for anyone maintaining a fork.
+
 ## Project Scope
 
 This project is for legitimate local automation, accessibility, testing, and offline applications. Contributions that target cheating, anti-cheat bypasses, or terms-of-service violations are out of scope.
@@ -68,6 +70,6 @@ When opening an issue, include:
 - the command or config file used,
 - the observed error message or output.
 
-## License and Conduct
+## License
 
-By contributing, you agree that your work will be released under the MIT License. Participation in the project is governed by [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+The source is available under [the Unlicense](LICENSE).
